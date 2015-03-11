@@ -54,3 +54,5 @@ Thumbs.db
 /app/tmp/tests/*
 !/app/tmp/tests/
 !/app/tmp/tests/empty
+
+.idea
