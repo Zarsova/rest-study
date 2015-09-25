@@ -71,6 +71,11 @@
 				</table>
 			</div>
 		</div>
+		<div class="row">
+			<div class="col-xs-6">
+				<a href="/rest-study/todo_lists/download" class="alert alert-default pull-left" id="downloadTodo">TODOリストをダウンロード</a>
+			</div>
+		</div>
 	</script>
 
 	<!-- TODO一行分のテンプレート（上のtbody部分に挿入される） -->

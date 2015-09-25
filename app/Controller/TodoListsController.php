@@ -3,7 +3,7 @@
 App::uses('AppController', 'Controller');
 
 class TodoListsController extends AppController {
-	private $fields = array (
+	private $fields = array(
 		'TodoList.id',
 		'TodoList.todo',
 		'TodoList.status',
@@ -14,18 +14,18 @@ class TodoListsController extends AppController {
 	);
 
 	public function index() {
-		$query = array (
+		$query = array(
 			'fields' => $this->fields,
-			'order' => "TodoList.id"
+			'order'  => "TodoList.id"
 		);
 		$res = $this->TodoList->find('all', $query);
 		// 整形
 		if (count($res) > 0) {
-		    $loginUserId = $this->Auth->user()['id'];
-			foreach ( $res as $key => $row ) {
-			    //「ログインユーザがオーナである」フラグ
+			$loginUserId = $this->Auth->user()['id'];
+			foreach ($res as $key => $row) {
+				//「ログインユーザがオーナである」フラグ
 				$res[$key]['TodoList']['owned'] = $row['Owner']['id'] === $loginUserId;
-			    //「ログインユーザが担当である」フラグ
+				//「ログインユーザが担当である」フラグ
 				$res[$key]['TodoList']['assigned'] = $row['Assignee']['id'] === $loginUserId;
 			}
 		}
@@ -47,12 +47,13 @@ class TodoListsController extends AppController {
 		$this->set(compact('response'));
 		$this->set('_serialize', 'response');
 	}
+
 	public function delete($id) {
 		//オーナかどうかチェック
-		if(!$this->TodoList->isOwner($id)){
+		if (!$this->TodoList->isOwner($id)) {
 			$this->setStatusValidationError();
 			$response = $this->editErrors('オーナのみ削除可能です。');
-		}else{
+		} else {
 			$res = $this->TodoList->delete($id, false);
 			$response = $this->editResponse($res);
 		}
@@ -70,16 +71,57 @@ class TodoListsController extends AppController {
 		$this->set('_serialize', 'response');
 	}
 
+	public function download() {
+
+		//id順で一覧取得
+		$query = array(
+			'fields' => $this->fields,
+			'order'  => "TodoList.id"
+		);
+		$res = $this->TodoList->find('all', $query);
+		// CSVファイルに整形
+		if ($res && is_array($res)) {
+			$fp = fopen('php://temp', 'w+');
+			//タイトル
+			$fields = array('id', 'todo', 'status', 'owner', 'assignee');
+			fputcsv($fp, $fields);
+			//データ
+			foreach ($res as $record) {
+				$fields = array();
+				$fields[] = $record['TodoList']['id'];
+				$fields[] = $record['TodoList']['todo'];
+				$fields[] = $record['TodoList']['status'];
+				$fields[] = $record['Owner']['name'];
+				$fields[] = $record['Assignee']['name'];
+				fputcsv($fp, $fields);
+			}
+			//ポインタを先頭に
+			rewind($fp);
+			//読み込み
+			$content = stream_get_contents($fp);
+			//このままだとエンコーディングはUTF-8, 改行コードはLFとなり、
+			//Excelでひらけないので、開きたい場合は下記コメントインしてエンコーディングをSJIS-winにする
+			//$content =  mb_convert_encoding($content, 'sjis-win', 'UTF-8');
+			fclose($fp);
+			//Viewを使用しない
+			$this->autoRender = false;
+			//ダウンロードファイル名を設定
+			$this->response->download('todo.csv');
+			$this->response->type('csv');
+			$this->response->body($content);
+		}
+	}
+
 	//レスポンスを編集
-	private function editResponse($res){
-		if($res){
+	private function editResponse($res) {
+		if ($res) {
 			$response = $res;
-		}else{
+		} else {
 			$this->setStatusValidationError();
 			$respnse = array();
-			if(count($this->TodoList->validationErrors) > 0){
+			if (count($this->TodoList->validationErrors) > 0) {
 				$response = $this->editErrors($this->TodoList->validationErrors);
-			}else{
+			} else {
 				$response = $this->editErrors('エラーが発生しました。');
 			}
 		}
@@ -87,16 +129,16 @@ class TodoListsController extends AppController {
 	}
 
 	//バリデーションエラー時はレスポンスを400に設定
-	private function setStatusValidationError(){
+	private function setStatusValidationError() {
 		$this->response->statusCode(400);
 	}
 
 	//エラーメッセージを編集
-	private function editErrors($errors){
-		if(is_array($errors)){
+	private function editErrors($errors) {
+		if (is_array($errors)) {
 			$res['errors'] = $errors;
-		}else{
-			$res['errors']  = array('error' => array($errors));
+		} else {
+			$res['errors'] = array('error' => array($errors));
 		}
 		return $res;
 	}
