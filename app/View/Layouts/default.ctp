@@ -75,6 +75,12 @@
 			<div class="col-xs-6">
 				<a href="/rest-study/todo_lists/download" class="alert alert-default pull-left" id="downloadTodo">TODOリストをダウンロード</a>
 			</div>
+			<div class="col-xs-6">
+				<form class="form-inline">
+					<input type="file" id="uploadFile" name="uploadFile" multiple class="form-control">
+					<a class="btn btn-info pull-right" id="uploadButton">TODOリストファイルアップロード</a>
+				</form>
+			</div>
 		</div>
 	</script>
 

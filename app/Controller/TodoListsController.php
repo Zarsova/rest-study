@@ -1,7 +1,11 @@
 <?php
-
 App::uses('AppController', 'Controller');
 
+/**
+ * Class TodoListsController
+ *
+ * @property  TodoList $TodoList
+ */
 class TodoListsController extends AppController {
 	private $fields = array(
 		'TodoList.id',
@@ -111,6 +115,62 @@ class TodoListsController extends AppController {
 			$this->response->body($content);
 		}
 	}
+
+
+	public function upload() {
+		$files = $this->request->params['form'];
+		$owner = $this->Auth->user()['id'];
+		$numTodos = 0;
+		foreach ($files as $file) {
+			$fileName = $file['name'];
+			$filePath = $file['tmp_name'];
+			$todos = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+			$assignee = $owner;
+			$errors = array();
+			$lineNo = 1;
+			foreach ($todos as $todo) {
+				$data = array();
+				$data['todo'] = $todo;
+				$data['status'] = 0;
+				$data['owner'] = $owner;
+				$data['assignee'] = $assignee;
+				$res = $this->TodoList->save($data);
+				if ($res) {
+					$numTodos++;
+				} else {
+					if (count($this->TodoList->validationErrors) > 0) {
+						foreach ($this->TodoList->validationErrors as $validationErrorsOfLine) {
+							$title = 'file:' . $fileName . ' - line: ' . $lineNo . ': ';
+							foreach ($validationErrorsOfLine as $validationError) {
+								$errors[] = array(
+									$title . $validationError
+								);
+							}
+						}
+					}
+				}
+				$this->TodoList->create();
+				$lineNo++;
+			}
+		}
+		if (count($errors) > 0) {
+			$this->TodoList->validationErrors = $errors;
+			$response = $this->editResponse(false);
+			array_unshift($response['errors'], array(
+				'以下のエラーが発生しました。'
+			));
+			if ($numTodos > 0) {
+				array_unshift($response['errors'], array(
+					$numTodos . '件のTODOを登録しました。'
+				));
+			}
+		} else {
+			$response = $numTodos . '件のTODOを登録しました。';
+		}
+		$this->set(compact('response'));
+		$this->set('_serialize', 'response');
+	}
+
 
 	//レスポンスを編集
 	private function editResponse($res) {
